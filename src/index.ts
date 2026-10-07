@@ -1,4 +1,4 @@
-import {readFileSync} from 'node:fs';
+import {readFileSync, statSync} from 'node:fs';
 import {resolve, sep} from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
@@ -25,7 +25,9 @@ export default function componentCatalog(options: CatalogOptions = {}): Plugin {
 	let root = '';
 	let opts: ReturnType<typeof normalizeOptions>;
 	let checker: Promise<any> | undefined;
-	const cache = new Map<string, Meta>();
+	// keyed by file; `stamp` (mtime+size) is checked on every request, so edits are seen even if the watcher event is missed or late
+	const cache = new Map<string, {meta: Meta; stamp: string}>();
+	const seen = new Map<string, string>(); // stamp of each file as last given to the checker
 	let gen = 0; // bumped on file changes; a slow /meta that started before one must not cache its (stale) result
 
 	// promise cached so concurrent first requests share one checker
@@ -41,15 +43,23 @@ export default function componentCatalog(options: CatalogOptions = {}): Plugin {
 		}));
 
 	async function getMeta(file: string): Promise<Meta> {
-		if (cache.has(file)) return cache.get(file)!;
+		const st = statSync(file); // throws if deleted -> 500
+		const stamp = `${st.mtimeMs}:${st.size}`;
+		const hit = cache.get(file);
+		if (hit?.stamp === stamp) return hit.meta;
 		const started = gen;
-		const m = (await getChecker()).getComponentMeta(file);
+		const c = await getChecker();
+		if (seen.get(file) !== stamp) {
+			c.updateFile(file, readFileSync(file, 'utf8'));
+			seen.set(file, stamp);
+		}
+		const m = c.getComponentMeta(file);
 		const meta: Meta = {
 			props: m.props.filter((p: any) => !p.global).map((p: any) => ({name: p.name, type: strip(p.type), required: p.required, default: p.default})),
 			events: m.events.map((e: any) => e.name),
 			slots: m.slots.map((s: any) => s.name)
 		};
-		if (started === gen) cache.set(file, meta);
+		if (started === gen) cache.set(file, {meta, stamp});
 		return meta;
 	}
 
