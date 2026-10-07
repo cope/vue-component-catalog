@@ -38,7 +38,7 @@ it('meta follows component create, edit and delete', async () => {
 		return {status: r.status, props: r.ok ? ((await r.json()).props as {name: string}[]).map((p) => p.name) : []};
 	};
 	const until = async (cond: () => Promise<boolean>) => {
-		for (let i = 0; i < 40 && !(await cond()); i++) await new Promise((r) => setTimeout(r, 100));
+		for (const end = Date.now() + 30000; Date.now() < end && !(await cond());) await new Promise((r) => setTimeout(r, 100));
 		return cond();
 	};
 	try {

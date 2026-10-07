@@ -26,6 +26,7 @@ export default function componentCatalog(options: CatalogOptions = {}): Plugin {
 	let opts: ReturnType<typeof normalizeOptions>;
 	let checker: Promise<any> | undefined;
 	const cache = new Map<string, Meta>();
+	let gen = 0; // bumped on file changes; a slow /meta that started before one must not cache its (stale) result
 
 	// promise cached so concurrent first requests share one checker
 	const getChecker = () =>
@@ -41,13 +42,14 @@ export default function componentCatalog(options: CatalogOptions = {}): Plugin {
 
 	async function getMeta(file: string): Promise<Meta> {
 		if (cache.has(file)) return cache.get(file)!;
+		const started = gen;
 		const m = (await getChecker()).getComponentMeta(file);
 		const meta: Meta = {
 			props: m.props.filter((p: any) => !p.global).map((p: any) => ({name: p.name, type: strip(p.type), required: p.required, default: p.default})),
 			events: m.events.map((e: any) => e.name),
 			slots: m.slots.map((s: any) => s.name)
 		};
-		cache.set(file, meta);
+		if (started === gen) cache.set(file, meta);
 		return meta;
 	}
 
@@ -115,7 +117,11 @@ try {
 				server.ws.send({type: 'full-reload'});
 			}
 			if (!/\.(vue|ts)$/.test(file)) return;
-			cache.clear();
+			const invalidate = () => {
+				cache.clear();
+				gen++;
+			};
+			invalidate();
 			try {
 				const c = await checker;
 				if (type === 'delete') c?.deleteFile(file);
@@ -123,6 +129,7 @@ try {
 			} catch {
 				// meta is best-effort; the next /meta request reports the real error
 			}
+			invalidate(); // again: a /meta call during the await above saw the checker before updateFile
 		}
 	};
 }
