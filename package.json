@@ -1,0 +1,99 @@
+{
+	"name": "vue-component-catalog",
+	"version": "0.1.0",
+	"description": "Zero-story, live component catalog for Vue 3 + Vite projects",
+	"license": "MIT",
+	"type": "module",
+	"repository": "github:cope/vue-component-catalog",
+	"files": [
+		"dist",
+		"src/ui",
+		"client.d.ts"
+	],
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"default": "./dist/index.mjs"
+		},
+		"./define": {
+			"types": "./dist/define.d.mts",
+			"default": "./dist/define.mjs"
+		},
+		"./client": {
+			"types": "./client.d.ts"
+		}
+	},
+	"scripts": {
+		"serve": "vite serve playground --open /__catalog",
+		"build": "tsdown",
+		"typecheck": "vue-tsc --noEmit",
+		"quick": "vitest run",
+		"test": "vitest run --coverage",
+		"test:watch": "vitest watch",
+		"bail": "vitest run --coverage --bail 1",
+		"lint": "eslint src test --no-fix",
+		"linter": "eslint src test --no-fix --quiet",
+		"lint:fix": "eslint src test --fix",
+		"imports": "eslint src test --no-fix --rule unused-imports/no-unused-imports:error",
+		"fiximports": "eslint src test --fix --rule unused-imports/no-unused-imports:error",
+		"format": "prettier --log-level error --write \"src/**/*.{vue,js,json,ts}\" \"test/**/*.{js,ts}\"",
+		"format_check": "prettier --check \"src/**/*.{vue,js,json,ts}\" \"test/**/*.{js,ts}\"",
+		"ft": "pnpm format && pnpm test",
+		"bl": "pnpm build && pnpm lint:fix",
+		"fix": "pnpm i && pnpm dedupe && skeletest -f && pnpm format && git add test && pnpm lint:fix && pnpm test",
+		"magic": "pnpm fix",
+		"up": "pnpm up -i",
+		"l": "pnpm up -i -L",
+		"main": "git checkout main && git pull && git fetch origin && pnpm i && git branch",
+		"dupe": "pnpm dedupe --check && pnpm audit",
+		"check": "pnpm i && skeletest && pnpm format_check && pnpm lint && pnpm typecheck && pnpm build && pnpm test"
+	},
+	"dependencies": {
+		"@tailwindcss/browser": "^4.1.0",
+		"vue-component-meta": "^3.0.0"
+	},
+	"peerDependencies": {
+		"@vitejs/plugin-vue": ">=5",
+		"typescript": "*",
+		"vite": ">=6",
+		"vue": "^3.5.0"
+	},
+	"peerDependenciesMeta": {
+		"typescript": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@eslint/js": "^10.0.1",
+		"@tailwindcss/vite": "^4.3.3",
+		"@types/node": "^26.6.4",
+		"@typescript-eslint/eslint-plugin": "^8.71.1",
+		"@typescript-eslint/parser": "^8.71.1",
+		"@vitejs/plugin-vue": "^6.0.9",
+		"@vitest/coverage-v8": "^5.0.3",
+		"@vue/test-utils": "^2.5.1",
+		"eslint": "^10.12.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-sonarjs": "^4.2.2",
+		"eslint-plugin-unused-imports": "^4.4.1",
+		"eslint-plugin-vue": "^10.11.1",
+		"globals": "^17.13.0",
+		"happy-dom": "^20.14.5",
+		"pinia": "^4.0.3",
+		"prettier": "^3.9.9",
+		"prettier-plugin-tailwindcss": "^0.8.1",
+		"skeletest": "^0.7.5",
+		"tailwindcss": "^4.3.3",
+		"tsdown": "^0.23.0",
+		"typescript": "^5.9.3",
+		"vite": "^8.3.3",
+		"vitest": "^5.0.3",
+		"vue": "^3.5.43",
+		"vue-eslint-parser": "^10.4.1",
+		"vue-tsc": "^3.3.12"
+	},
+	"engines": {
+		"node": ">=24.6.0",
+		"pnpm": ">=11.8.0"
+	}
+}
