@@ -11,10 +11,10 @@
 		tailwind: boolean;
 	}>();
 
+	// a new/removed component file makes Vite reload the page, so these are computed once
 	const keys = Object.keys(p.components).sort();
 	const root = commonDir(keys);
-	const idOf = (k: string) => k.slice(root.length).replace(/\.vue$/, '');
-	const byId = Object.fromEntries(keys.map((k) => [idOf(k), k]));
+	const byId = Object.fromEntries(keys.map((k) => [k.slice(root.length).replace(/\.vue$/, ''), k]));
 	const filter = ref('');
 	const groups = computed(() => {
 		const g: Record<string, string[]> = {};
@@ -29,7 +29,7 @@
 	const selected = ref(new URLSearchParams(location.search).get('c') ?? '');
 	const select = (id: string) => {
 		selected.value = id;
-		history.pushState(null, '', `?c=${id}`);
+		history.pushState(null, '', `?c=${encodeURIComponent(id)}`);
 	};
 
 	const comp = shallowRef<Component>();
@@ -45,36 +45,43 @@
 	const defaults = ref({props: {} as Record<string, unknown>, slots: {} as Record<string, string>});
 	const variants = ref<{name: string; props: Record<string, unknown>}[]>([]);
 	const log = ref<string[]>([]);
+	const fallback = ref(false);
 	const width = ref('100%');
 	const bg = ref('white');
 	const clone = <T,>(v: T): T => structuredClone(v);
 	const reset = () => Object.assign(state, {props: clone(defaults.value.props), slots: {...defaults.value.slots}});
 	const controls = computed(() => propControls(info.props));
 
+	const fetchMeta = (key: string) =>
+		fetch(`/__catalog/meta?file=${encodeURIComponent(key)}`)
+			.then((r) => (r.ok ? r.json() : null))
+			.catch(() => null);
+	// fallback when vue-component-meta is unavailable
+	const runtimeMeta = (c: any) => ({
+		props: runtimeProps(c.props),
+		events: Array.isArray(c.emits) ? c.emits : Object.keys(c.emits ?? {}),
+		slots: ['default']
+	});
+
+	const exampleFor = (key: string) => p.examples[key.replace(/\.vue$/, '.catalog.ts')] ?? p.examples[key.replace(/\.vue$/, '.catalog.js')] ?? {};
+
+	let seq = 0;
 	async function load(id: string) {
+		const my = ++seq;
+		fallback.value = false;
 		const key = byId[id];
 		comp.value = undefined;
 		loadError.value = '';
 		if (!key) return;
 		try {
 			const c = ((await p.components[key]()) as any) ?? {};
+			if (my !== seq) return;
 			comp.value = c;
-			const meta = await fetch(`/__catalog/meta?file=${encodeURIComponent(key)}`)
-				.then(
-					(r) => (r.ok ? r.json() : Promise.reject()),
-					() => Promise.reject()
-				)
-				.catch(() => null);
-			const emits = c.emits;
-			Object.assign(
-				info,
-				meta ?? {
-					props: runtimeProps(c.props),
-					events: Array.isArray(emits) ? emits : Object.keys(emits ?? {}),
-					slots: ['default']
-				}
-			);
-			const ex = p.examples[key.replace(/\.vue$/, '.catalog.ts')] ?? p.examples[key.replace(/\.vue$/, '.catalog.js')] ?? {};
+			const meta = await fetchMeta(key);
+			if (my !== seq) return;
+			fallback.value = !meta;
+			Object.assign(info, meta ?? runtimeMeta(c));
+			const ex = exampleFor(key);
 			const slots = Object.fromEntries(info.slots.map((s) => [s, s === 'default' ? (ex.slot ?? '') : (ex.slots?.[s] ?? '')]));
 			const props = seedProps(info.props, ex.props);
 			defaults.value = {props: clone(props), slots: {...slots}};
@@ -82,6 +89,7 @@
 			variants.value = ex.variants ?? [];
 			log.value = [];
 		} catch (e) {
+			if (my !== seq) return;
 			loadError.value = String(e);
 		}
 	}
@@ -94,7 +102,7 @@
 			info.events.map((name) => [
 				toHandlerKey(camelize(name)),
 				(...args: unknown[]) => {
-					log.value.unshift(`${name} ${JSON.stringify(args)}`);
+					log.value = [`${name} ${JSON.stringify(args)}`, ...log.value].slice(0, 200);
 					if (name.startsWith('update:')) state.props = {...state.props, [name.slice(7)]: args[0]};
 				}
 			])
@@ -111,7 +119,12 @@
 
 	onMounted(async () => {
 		if (!p.tailwind) return;
-		await import('@tailwindcss/browser');
+		try {
+			await import('@tailwindcss/browser');
+		} catch (e) {
+			console.error('[vue-component-catalog] runtime Tailwind failed to load', e);
+			return;
+		}
 		document.head.append(Object.assign(document.createElement('style'), {type: 'text/tailwindcss', textContent: p.theme}));
 	});
 </script>
@@ -123,7 +136,9 @@
 			<input v-model="filter" placeholder="Filter…" />
 			<template v-for="(ids, dir) in groups" :key="dir">
 				<h4 v-if="dir">{{ dir }}</h4>
-				<a v-for="id in ids" :key="id" href="#" :class="{active: id === selected}" @click.prevent="select(id)">{{ id.split('/').pop() }}</a>
+				<a v-for="id in ids" :key="id" :href="`?c=${encodeURIComponent(id)}`" :class="{active: id === selected}" @click.exact.prevent="select(id)">{{
+					id.split('/').pop()
+				}}</a>
 			</template>
 		</nav>
 		<main class="vcc-main">
@@ -143,6 +158,7 @@
 								{{ b }}
 							</button>
 						</span>
+						<span v-if="fallback" class="vcc-chip" title="vue-component-meta unavailable: controls come from runtime props">types: runtime fallback</span>
 						<span class="vcc-chip">Tailwind runtime: {{ tailwind ? 'on' : 'off' }}</span>
 					</header>
 					<Preview
@@ -200,7 +216,7 @@
 	.vcc-app {
 		--accent: #64748b;
 		display: flex;
-		height: 100vh;
+		height: 100dvh;
 		font:
 			14px/1.4 system-ui,
 			sans-serif;

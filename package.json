@@ -21,7 +21,8 @@
 		},
 		"./client": {
 			"types": "./client.d.ts"
-		}
+		},
+		"./package.json": "./package.json"
 	},
 	"scripts": {
 		"serve": "vite serve playground --open /__catalog",
@@ -55,7 +56,7 @@
 	"peerDependencies": {
 		"@vitejs/plugin-vue": ">=5",
 		"typescript": "*",
-		"vite": ">=6",
+		"vite": ">=8",
 		"vue": "^3.5.0"
 	},
 	"peerDependenciesMeta": {
@@ -93,7 +94,6 @@
 		"vue-tsc": "^3.3.12"
 	},
 	"engines": {
-		"node": ">=24.6.0",
-		"pnpm": ">=11.8.0"
+		"node": ">=20.19"
 	}
 }

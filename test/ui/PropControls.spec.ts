@@ -14,5 +14,6 @@ describe('PropControls', () => {
 		const w = mount(PropControls, {props: {controls: [{kind: 'json', name: 'o', required: false}], modelValue: {o: {}}}});
 		await w.find('textarea').setValue('{');
 		expect(w.find('.vcc-err').exists()).toBe(true);
+		expect((w.find('textarea').element as HTMLTextAreaElement).value).toBe('{');
 	});
 });

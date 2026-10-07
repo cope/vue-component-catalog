@@ -37,15 +37,21 @@ export function parseDefault(src?: string): unknown {
 }
 
 const PLACEHOLDERS: Record<string, unknown> = {text: 'text', number: 0, checkbox: false};
-const placeholder = (c: Control): unknown => (c.kind === 'select' ? c.options[0] : (PLACEHOLDERS[c.kind] ?? {}));
+const isArrayType = (t: string) => /\[\]$|^(Readonly)?Array</.test(t);
+function placeholder(c: Control, type: string): unknown {
+	if (c.kind === 'select') return c.options[0];
+	if (c.kind in PLACEHOLDERS) return PLACEHOLDERS[c.kind];
+	return isArrayType(type) ? [] : {};
+}
 
 /** initial prop values: placeholder for required, then declared defaults, then example */
 export function seedProps(props: PropInfo[], example: Record<string, unknown> = {}): Record<string, unknown> {
 	const out: Record<string, unknown> = {};
 	for (const c of propControls(props)) {
-		const d = parseDefault(props.find((p) => p.name === c.name)!.default);
+		const info = props.find((p) => p.name === c.name)!;
+		const d = parseDefault(info.default);
 		if (d !== undefined) out[c.name] = d;
-		else if (c.required) out[c.name] = placeholder(c);
+		else if (c.required) out[c.name] = placeholder(c, info.type);
 	}
 	return {...out, ...example};
 }
@@ -80,7 +86,7 @@ export interface ChangeState {
 /** only sections that differ from `defaults` */
 export function buildChangeRequest(s: ChangeState, defaults: Pick<ChangeState, 'props' | 'slots'>): string {
 	const lines = [`Component: ${s.component}`];
-	const props = Object.fromEntries(Object.entries(s.props).filter(([k, v]) => !same(v, defaults.props[k])));
+	const props = Object.fromEntries(Object.entries(s.props).filter(([k, v]) => v !== undefined && !same(v, defaults.props[k])));
 	if (Object.keys(props).length) lines.push(`Props: ${JSON.stringify(props)}`);
 	for (const [k, v] of Object.entries(s.slots)) if (v !== (defaults.slots[k] ?? '')) lines.push(`Slot (${k}): ${JSON.stringify(v)}`);
 	if (s.classes.trim()) lines.push(`Added classes: ${s.classes.trim()}`);
@@ -110,6 +116,7 @@ export async function copyText(text: string) {
 		await navigator.clipboard.writeText(text);
 	} catch {
 		const ta = Object.assign(document.createElement('textarea'), {value: text});
+		ta.style.position = 'fixed';
 		document.body.append(ta);
 		ta.select();
 		// eslint-disable-next-line sonarjs/deprecation -- only path that works in non-secure contexts (LAN IP)

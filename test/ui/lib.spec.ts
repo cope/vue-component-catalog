@@ -25,6 +25,7 @@ describe('propControls', () => {
 			{name: 'n', type: 'number', required: true},
 			{name: 'x', type: 'string'}
 		];
+		expect(seedProps([{name: 'l', type: 'string[]', required: true}])).toEqual({l: []});
 		expect(seedProps(p)).toEqual({v: 'b', n: 0});
 		expect(seedProps(p, {x: 'hi'})).toEqual({v: 'b', n: 0, x: 'hi'});
 	});

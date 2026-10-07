@@ -1,5 +1,6 @@
 <script setup lang="ts">
-	import {nextTick, onErrorCaptured, ref, watch, type Component} from 'vue';
+	import {nextTick, ref, watch, type Component} from 'vue';
+	import Instance from './Instance.vue';
 
 	const p = defineProps<{
 		comp: Component;
@@ -14,25 +15,26 @@
 		bg: string;
 	}>();
 
-	const error = ref<Error | null>(null);
+	// example props may be circular/BigInt: key becomes constant, so the classes warning can go stale for them
+	const safeKey = (v: unknown) => {
+		try {
+			return JSON.stringify(v);
+		} catch {
+			return '';
+		}
+	};
 	const warning = ref('');
 	const stage = ref<HTMLElement>();
 
-	onErrorCaptured((e) => {
-		error.value = e as Error;
-		return false;
-	});
-
 	// classes/attrs only reach a single-root, attr-inheriting component
 	watch(
-		() => [p.comp, p.props, p.slots, p.classes],
+		() => [p.comp, safeKey(p.props), safeKey(p.slots), p.classes],
 		async () => {
-			error.value = null;
 			await nextTick();
 			const roots = [...(stage.value?.childNodes ?? [])].filter((n) => n.nodeType === 1 || (n.nodeType === 3 && n.textContent?.trim()));
 			warning.value = (p.comp as any).inheritAttrs === false || roots.length > 1 ? 'Classes cannot apply: component is multi-root or has inheritAttrs: false.' : '';
 		},
-		{deep: true, immediate: true, flush: 'post'}
+		{immediate: true, flush: 'post'}
 	);
 </script>
 
@@ -41,20 +43,13 @@
 		<div :class="['vcc-canvas', `vcc-bg-${bg}`]" :style="{width}">
 			<p v-if="warning && classes" class="vcc-warn">{{ warning }}</p>
 			<component :is="'style'">.vcc-stage > * { {{ css }} }</component>
-			<pre v-if="error" class="vcc-err">{{ error.message }}{{ '\n' }}{{ error.stack }}</pre>
-			<div v-else>
-				<div ref="stage" class="vcc-stage">
-					<component :is="comp" v-bind="{...props, ...handlers, class: classes}">
-						<template v-for="(text, name) in slots" :key="name" #[name]>{{ text }}</template>
-					</component>
-				</div>
-				<div v-for="v in variants" :key="v.name" class="vcc-variant">
-					<small>{{ v.name }}</small>
-					<div class="vcc-stage">
-						<component :is="comp" v-bind="{...base, ...v.props, ...handlers}">
-							<template v-for="(text, name) in slots" :key="name" #[name]>{{ text }}</template>
-						</component>
-					</div>
+			<div ref="stage" class="vcc-stage">
+				<Instance :comp="comp" :attrs="{...props, ...handlers, class: classes}" :slots="slots" />
+			</div>
+			<div v-for="v in variants" :key="v.name" class="vcc-variant">
+				<small>{{ v.name }}</small>
+				<div class="vcc-stage">
+					<Instance :comp="comp" :attrs="{...base, ...v.props, ...handlers, class: classes}" :slots="slots" />
 				</div>
 			</div>
 		</div>

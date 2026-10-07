@@ -13,7 +13,7 @@ export interface ResolvedOptions {
 	setup?: string;
 }
 
-const clean = (p: string) => p.replace(/^\.?\//, '');
+const clean = (p: string) => p.replace(/^(!?)\.?\//, '$1');
 
 export function normalizeOptions(opts: CatalogOptions = {}, root: string): ResolvedOptions {
 	const include = [opts.include ?? 'src/components/**/*.vue'].flat().map(clean);

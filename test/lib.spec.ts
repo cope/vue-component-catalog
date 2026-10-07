@@ -7,6 +7,9 @@ describe('plugin lib', () => {
 		expect(normalizeOptions({}, '/tmp').include).toEqual(['src/components/**/*.vue']);
 		expect(() => normalizeOptions({setup: 'nope.ts'}, '/tmp')).toThrow(/setup file not found/);
 	});
+	it('cleans negated ./ patterns', () => {
+		expect(normalizeOptions({include: ['!./a/x.vue']}, '/tmp').include).toEqual(['!a/x.vue']);
+	});
 	it('derives examples globs', () => {
 		expect(examplesGlobs(['src/**/*.vue', 'x/*.tsx'])).toEqual(['/src/**/*.catalog.{ts,js}']);
 	});
