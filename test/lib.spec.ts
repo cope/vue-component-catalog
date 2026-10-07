@@ -7,6 +7,11 @@ describe('plugin lib', () => {
 		expect(normalizeOptions({}, '/tmp').include).toEqual(['src/components/**/*.vue']);
 		expect(() => normalizeOptions({setup: 'nope.ts'}, '/tmp')).toThrow(/setup file not found/);
 	});
+	it('normalizes path', () => {
+		expect(normalizeOptions({}, '/tmp').path).toBe('/__catalog');
+		expect(normalizeOptions({path: 'components/'}, '/tmp').path).toBe('/components');
+		expect(() => normalizeOptions({path: '/'}, '/tmp')).toThrow(/path/);
+	});
 	it('cleans negated ./ patterns', () => {
 		expect(normalizeOptions({include: ['!./a/x.vue']}, '/tmp').include).toEqual(['!a/x.vue']);
 	});

@@ -5,10 +5,13 @@ export interface CatalogOptions {
 	include?: string | string[];
 	themeCss?: string;
 	setup?: string;
+	/** page url, default `/__catalog` */
+	path?: string;
 }
 
 export interface ResolvedOptions {
 	include: string[];
+	path: string;
 	themeCss?: string;
 	setup?: string;
 }
@@ -23,7 +26,9 @@ export function normalizeOptions(opts: CatalogOptions = {}, root: string): Resol
 		if (!existsSync(abs)) throw new Error(`[vue-component-catalog] ${name} file not found: ${abs}`);
 		return abs;
 	};
-	return {include, themeCss: file('themeCss'), setup: file('setup')};
+	const path = '/' + (opts.path ?? '__catalog').split('/').filter(Boolean).join('/');
+	if (path === '/') throw new Error('[vue-component-catalog] path must not be "/"');
+	return {include, path, themeCss: file('themeCss'), setup: file('setup')};
 }
 
 /** root-relative globs for import.meta.glob (negations keep their `!`) */

@@ -22,13 +22,14 @@ export default defineConfig({
 		componentCatalog({
 			include: 'src/components/**/*.vue', // string | string[], default shown
 			themeCss: 'src/style.css', // optional: enables runtime Tailwind with this file's @theme
-			setup: 'src/catalog.setup.ts' // optional: default export (app) => void, install plugins/CSS
+			setup: 'src/catalog.setup.ts', // optional: default export (app) => void, install plugins/CSS
+			path: '/__catalog' // optional: page url, default shown
 		})
 	]
 });
 ```
 
-Open `http://localhost:<port>/__catalog` while `vite` is serving. The plugin is `apply: 'serve'`: nothing lands in
+Open `http://localhost:<port>/__catalog` (or your `path`) while `vite` is serving. The plugin is `apply: 'serve'`: nothing lands in
 `vite build`.
 
 ## Examples (optional)

@@ -1,6 +1,6 @@
 {
 	"name": "vue-component-catalog",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Zero-story, live component catalog for Vue 3 + Vite projects",
 	"license": "MIT",
 	"type": "module",
@@ -94,7 +94,7 @@
 		"vue-tsc": "^3.3.12"
 	},
 	"engines": {
-		"node": ">=20.19"
+		"node": ">=24.17"
 	},
 	"packageManager": "pnpm@12.8.2"
 }

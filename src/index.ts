@@ -9,8 +9,6 @@ export type {CatalogOptions};
 
 const ID = 'virtual:vue-component-catalog/entry';
 const RESOLVED = '\0' + ID;
-const PAGE = '/__catalog';
-const META = '/__catalog/meta';
 const UI = fileURLToPath(new URL(import.meta.url.includes('/dist/') ? '../src/ui/' : './ui/', import.meta.url));
 
 interface Meta {
@@ -86,7 +84,7 @@ import CatalogApp from ${JSON.stringify(UI + 'CatalogApp.vue')};
 ${opts.setup ? `import setup from ${JSON.stringify(opts.setup)};` : 'const setup = undefined;'}
 const components = ${glob(includeGlobs(opts.include), 'import: "default"')};
 const examples = ${glob(examplesGlobs(opts.include), 'eager: true, import: "default"')};
-const app = createApp(CatalogApp, {components, examples, theme: ${JSON.stringify(theme)}, tailwind: ${!!opts.themeCss}});
+const app = createApp(CatalogApp, {components, examples, metaUrl: ${JSON.stringify(opts.path + '/meta')}, theme: ${JSON.stringify(theme)}, tailwind: ${!!opts.themeCss}});
 try {
 	await setup?.(app);
 	app.mount('#app');
@@ -98,7 +96,7 @@ try {
 		configureServer(server) {
 			server.middlewares.use(async (req, res, next) => {
 				const url = new URL(req.url ?? '/', 'https://x');
-				if (url.pathname === META) {
+				if (url.pathname === opts.path + '/meta') {
 					res.setHeader('content-type', 'application/json');
 					try {
 						const abs = resolve(root, (url.searchParams.get('file') ?? '').replace(/^\//, ''));
@@ -111,10 +109,10 @@ try {
 						res.statusCode = 500;
 						res.end(JSON.stringify({error: String(e)}));
 					}
-				} else if (url.pathname === PAGE) {
+				} else if (url.pathname === opts.path) {
 					const html = `<!doctype html><html><head><meta charset="utf-8"><title>Component catalog</title></head><body><div id="app"></div><script type="module" src="/@id/__x00__${ID}"></script></body></html>`;
 					res.setHeader('content-type', 'text/html');
-					res.end(await server.transformIndexHtml(PAGE, html));
+					res.end(await server.transformIndexHtml(opts.path, html));
 				} else next();
 			});
 		},

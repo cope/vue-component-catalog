@@ -7,6 +7,7 @@
 	const p = defineProps<{
 		components: Record<string, () => Promise<Component>>;
 		examples: Record<string, any>;
+		metaUrl: string;
 		theme: string;
 		tailwind: boolean;
 	}>();
@@ -53,7 +54,7 @@
 	const controls = computed(() => propControls(info.props));
 
 	const fetchMeta = (key: string) =>
-		fetch(`/__catalog/meta?file=${encodeURIComponent(key)}`)
+		fetch(`${p.metaUrl}?file=${encodeURIComponent(key)}`)
 			.then((r) => (r.ok ? r.json() : null))
 			.catch(() => null);
 	// fallback when vue-component-meta is unavailable
