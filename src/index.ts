@@ -79,14 +79,16 @@ export default function componentCatalog(options: CatalogOptions = {}): Plugin {
 				theme = extractTheme(readFileSync(opts.themeCss, 'utf8'));
 			}
 			const glob = (g: string[], extra = '') => `import.meta.glob(${JSON.stringify(g)}, {${extra}})`;
-			return `import {createApp} from 'vue';
+			return `import {createApp, h} from 'vue';
 import CatalogApp from ${JSON.stringify(UI + 'CatalogApp.vue')};
 ${opts.setup ? `import setup from ${JSON.stringify(opts.setup)};` : 'const setup = undefined;'}
 const components = ${glob(includeGlobs(opts.include), 'import: "default"')};
 const examples = ${glob(examplesGlobs(opts.include), 'eager: true, import: "default"')};
-const app = createApp(CatalogApp, {components, examples, metaUrl: ${JSON.stringify(opts.path + '/meta')}, theme: ${JSON.stringify(theme)}, tailwind: ${!!opts.themeCss}});
+let wrapper;
+const page = () => h(CatalogApp, {components, examples, metaUrl: ${JSON.stringify(opts.path + '/meta')}, theme: ${JSON.stringify(theme)}, tailwind: ${!!opts.themeCss}});
+const app = createApp({render: () => (wrapper ? h(wrapper, null, {default: page}) : page())});
 try {
-	await setup?.(app);
+	wrapper = (await setup?.(app))?.wrapper;
 	app.mount('#app');
 } catch (e) {
 	document.getElementById('app').innerHTML = '<pre style="color:#b91c1c;padding:16px">catalog setup failed: ' + String(e?.stack ?? e).replace(/</g, '&lt;') + '</pre>';

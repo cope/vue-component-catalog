@@ -16,6 +16,7 @@ it('serves catalog page, entry and meta', async () => {
 		const entry = await server.pluginContainer.load('\0virtual:vue-component-catalog/entry');
 		expect(JSON.stringify(entry)).toContain('/src/components/**/*.vue');
 		expect(JSON.stringify(entry)).toContain('/src/components/**/*.catalog.{ts,js}');
+		expect(JSON.stringify(entry)).toContain('wrapper');
 		const meta = await (await fetch(`${base}__catalog/meta?file=/src/components/Button.vue`)).json();
 		expect(meta.props.find((p: any) => p.name === 'variant').type).toMatch(/^.primary. \| .ghost. \| .danger.$/);
 		expect(meta.events).toContain('click');

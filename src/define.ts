@@ -1,3 +1,5 @@
+import type {App, Component} from 'vue';
+
 export interface CatalogExample {
 	props?: Record<string, unknown>;
 	/** default slot text */
@@ -9,3 +11,6 @@ export interface CatalogExample {
 }
 
 export const defineCatalog = (example: CatalogExample): CatalogExample => example;
+
+/** `setup` default export: install plugins on the app; optionally return a `wrapper` component (renders its default slot) to provide context such as a TooltipProvider */
+export type CatalogSetup = (_app: App) => void | {wrapper?: Component} | Promise<void | {wrapper?: Component}>;

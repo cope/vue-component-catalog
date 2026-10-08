@@ -32,6 +32,23 @@ export default defineConfig({
 Open `http://localhost:<port>/__catalog` (or your `path`) while `vite` is serving. The plugin is `apply: 'serve'`: nothing lands in
 `vite build`.
 
+### Providing context (`wrapper`)
+
+`setup` may return `{wrapper}`: a component that renders its default slot. The whole catalog is rendered inside it, so
+anything it provides reaches previewed components (e.g. reka-ui's `TooltipProvider`):
+
+```ts
+import {defineComponent, h} from 'vue';
+import {TooltipProvider} from 'reka-ui';
+import type {CatalogSetup} from 'vue-component-catalog/define';
+
+const Wrapper = defineComponent((_, {slots}) => () => h(TooltipProvider, null, slots));
+export default ((app) => {
+	app.use(pinia);
+	return {wrapper: Wrapper};
+}) satisfies CatalogSetup;
+```
+
 ## Examples (optional)
 
 Co-locate `Button.catalog.ts` next to `Button.vue`:
